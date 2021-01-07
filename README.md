@@ -4,6 +4,7 @@
 Download real time quote data using Ally Invest API and save data to MySQL. 
 
 **Data**
+
 Stock Quote Data:
 Quote data from all 500 companies in the SP500. Data includes Ask/Bid price, Ask/Bid time, Ask/Bid size, moving averages, volatility, volume and more.
 
@@ -14,6 +15,7 @@ Options data is limited to one options chain per request unlike quote request wh
 With the ability to request market status ('open', 'close', 'pre', 'post'), I'll request quotes on a timed loop while market status is 'open' and when market status changes I'll have the script sleep until market open.
 
 **Questions or Concerns**
+
 Feel free to message me with any thoughts.
 
 -Damian
