@@ -14,11 +14,14 @@ from mysql.connector import Error
 class AllyAPI:    
     
     def __init__(self):
+        # base url
         self.url = 'https://devapi.invest.ally.com/v1/'
+        # unique authorization keys to my account
         self.authorize = OAuth1('PRIVATE KEY INFORMATION',
                                 'PRIVATE KEY INFORMATION',
                                 'PRIVATE KEY INFORMATION',
                                 'PRIVATE KEY INFORMATION')
+        # list of company tickers
         self.parameters = {'symbols': '''mmm, abt, abbv, abmd, acn, atvi, adbe, 
                            amd, aap, aes, afl, a, apd, akam, alk, alb, are, 
                            alxn, algn, alle, lnt, all, googl, goog, mo, amzn, 
@@ -70,47 +73,54 @@ class AllyAPI:
                            wba, dis, wn, wat, wec, wfc, well, wst, wdc, wu, 
                            wrk, wy, whr, wmb, wltw, wynn, xel, xrx, xlnx, xyl, 
                            yum, zbra, zbh, zion, zts'''}
+        # options chain ticker
         self.options_parameters = {'symbol': 'spx',
                                    'query': '20210115'}
     
-    def marketStatus(self):
+    def marketStatus(self): # get market status ('open', 'close', 'pre', 'post')
+        # market status url extention
         market_url_ext = 'market/clock.json'
         market_url = self.url + market_url_ext
         response = requests.get(market_url)
+        # parsing json file
         content = response.content
         info = json.loads(content)
         market_status = list(info['response']['status'].values())[0]
         return market_status
     
     def getQuotes(self):
+        # quote url extention
         quote_url_ext = 'market/ext/quotes.json'
         quote_url = self.url + quote_url_ext
         response = requests.get(quote_url, auth = self.authorize, 
                                 params = self.parameters)
+        # parsing json file and returning a dictionary of useful data
         content = response.content
         info = json.loads(content)
         quote_dict = info['response']['quotes']['quote']
         return quote_dict
     
     def getOptions(self):
+        # options chain url extention
         options_url_ext = 'market/options/search.json'
         options_url = self.url + options_url_ext
         response = requests.get(options_url, auth = self.authorize, 
                                 params = self.options_parameters)
+        # parsing json file and returning a dictionary of useful data
         content = response.content
         info = json.loads(content)
         options_dict = info['response']['quotes']['quote']
-        print(options_dict)
         return options_dict
     
 class SQL:
     
     def __init__(self):
+        # info to make connection to MySQL
         self.host_name = 'localhost'
         self.user_name = 'root'
         self.password =  'PRIVATE PASSWORD'
         
-    def sql_connection(self):
+    def sql_connection(self): # securing connection to MySQL
         connection = None
         try:
             connection = mysql.connector.connect(
@@ -122,7 +132,7 @@ class SQL:
             print(f"Error: '{err}'")
         return connection
     
-    def create_db_connection(self, database_name):
+    def create_db_connection(self, database_name): # securing connection to specific database in MySQL
         self.database_name = database_name
         self.connection = None
         try:
@@ -136,7 +146,7 @@ class SQL:
             print(f"Error: '{err}'")
         return self.connection  
 
-    def execute_quote_query(self, connection, val):
+    def execute_quote_query(self, connection, val): # function used to upload quote data in MySQL into data TABLE
         connect = connection
         sql = """
         INSERT INTO data (id, adp_100, adp_200, adp_50, adv_21, 
@@ -167,8 +177,8 @@ class SQL:
             print("Query Successful")
         except Error as err:
             print(f"Error: '{err}'")
-            
-    def execute_options_query(self, connection, options_quote_list):
+                        
+    def execute_options_query(self, connection, options_quote_list): # function used to upload option chain data in MySQL into options_data TABLE
         connect = connection
         sql = """
         INSERT INTO options_data (id, ask, ask_time, asksz, basis, bid, bid_time, 
@@ -195,7 +205,7 @@ class SQL:
             except Error as err:
                 print(f"Error: '{err}'")
 
-    def execute_query(self, connection, query):
+    def execute_query(self, connection, query): # function used to run MySQL commands from python. USed to get max_id for unique primary key value
         self.connection = connection
         self.query = query
         self.cursor = self.connection.cursor()
@@ -209,8 +219,10 @@ class SQL:
 class Clean:
     
     def __init__(self):
+        # empty list to load tuples for storage
         self.tup_list = []
     def cleanQuotes(self, quotes):
+        # clean list of dictionaries to list of tuples using dictionary values()
         self.quotes = quotes
         for quote in quotes:
             tup = tuple(quote.values())
@@ -218,6 +230,7 @@ class Clean:
         return self.tup_list
             
     def cleanOptions(self, options):
+        # clean list of dictionaries to list of tuples using dictionary values()
         self.options = options
         for quote in options:
             tup = tuple(quote.values())
@@ -228,11 +241,14 @@ class Clean:
 class Save:
     
     def __init__(self):
+        # creating new connection. Seemed to have trouble using the connection original connection
+        # currently need to make new connection each time data is to be uploaded to MySQL
         self.connection = SQL().create_db_connection('ticker')
     
     def saveQuotes(self, clean_quotes):
         connect = self.connection
         cursor = connect.cursor()
+        # obtaining max_id to use as the unique key for each line of data
         cursor.execute('SELECT max(id) FROM ticker.data;')
         max_id = cursor.fetchall()
         max_id = max_id[0][0]
@@ -241,6 +257,7 @@ class Save:
         else:
             max_id = 0
         for quote in clean_quotes:
+            # inserting the max_id as the first element in each tuple
             val = ((max_id), ) + quote
             SQL().execute_quote_query(connect, val)
             max_id += 1
@@ -248,6 +265,7 @@ class Save:
     def saveOptions(self, clean_options):
         connect = self.connection
         cursor = connect.cursor()
+        # obtaining max_id to use as the unique key for each line of data
         cursor.execute('SELECT max(id) FROM ticker.options_data;')
         max_id = cursor.fetchall()
         max_id = max_id[0][0]
@@ -257,6 +275,7 @@ class Save:
             max_id = 0
         options_quote_list = []
         for quote in clean_options:
+            # inserting the max_id as the first element in each tuple
             val = ((max_id), ) + quote
             options_quote_list.append(val)
             max_id += 1
