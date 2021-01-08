@@ -281,23 +281,14 @@ class Save:
             max_id += 1
         SQL().execute_options_query(connect, options_quote_list)
 
-"""
-AllyAPI()
-"""
-market_status = AllyAPI().marketStatus()
-quotes = AllyAPI().getQuotes()
-options = AllyAPI().getOptions()
-"""
-SQL()
-"""
 connection = SQL().create_db_connection('ticker')
-"""
-CLean()
-"""
-clean_quotes = Clean().cleanQuotes(quotes)
-clean_options = Clean().cleanOptions(options)
-"""
-Save()
-"""
-Save().saveQuotes(clean_quotes)
-Save().saveOptions(clean_options)
+while AllyAPI().marketStatus() == 'open':
+    start = time.time() # begin timer 
+    quotes = AllyAPI().getQuotes() # requests stock quotes
+    #options = AllyAPI().getOptions() # request options chain quote... currently commented out because the process of requesting and saving options chain data is over approx 3 min
+    clean_quotes = Clean().cleanQuotes(quotes)
+    #clean_options = Clean().cleanOptions(options) # clean options chain data... currently commented out because the process of requesting and saving options chain data is over approx 3 min
+    Save().saveQuotes(clean_quotes)
+    #Save().saveOptions(clean_options) # save options chain data... currently commented out because the process of requesting and saving options chain data is over approx 3 min
+    end = time.time() # end timer
+    time.sleep(10.0 - (end-start)) # sleeps 10 seconds before submitting new request for data... process of requesting and saving quote data is approx 3 seconds
