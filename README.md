@@ -1,7 +1,7 @@
 # Ally-API
 
 ### Objective
-Download real time quote data on a timed scale (increments of seconds, minutes, or hours) limited by computing power, connection speed, script efficiency using Ally Invest API and save data to MySQL. 
+Download real time stock and options chain quote data on a timed scale (increments of seconds, minutes, or hours) limited by computing power, connection speed, script efficiency using Ally Invest API and save data to MySQL. 
 
 **Data**
 
